@@ -5,17 +5,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="817db963-91a8-463f-b70b-318ac78b8c6b" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/try.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/.gitignore" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/AML-Affordance-detection.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/AML-Affordance-detection.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/other.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/mesh.py" beforeDir="false" afterPath="$PROJECT_DIR$/mesh.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/plot_utils.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/render.py" beforeDir="false" afterPath="$PROJECT_DIR$/render.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/utils.py" beforeDir="false" afterPath="$PROJECT_DIR$/utils.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -77,7 +67,7 @@
       <updated>1736547942008</updated>
       <workItem from="1736547946212" duration="1492000" />
       <workItem from="1736549458564" duration="760000" />
-      <workItem from="1736550718817" duration="1447000" />
+      <workItem from="1736550718817" duration="4709000" />
     </task>
     <servers />
   </component>
