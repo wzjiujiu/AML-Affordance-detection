@@ -28,6 +28,25 @@ def get_camera_from_view2(elev, azim, r=3.0):
     camera_proj = kal.render.camera.generate_transformation_matrix(pos, look_at, direction)
     return camera_proj
 
+def get_camera_from_view1(elev, azim, r=3.0):
+    x = r * torch.cos(elev) * torch.cos(azim)
+    y = r * torch.sin(elev)
+    z = r * torch.cos(elev) * torch.sin(azim)
+
+    pos = torch.tensor([x, y, z]).unsqueeze(0).to(device)  # Camera position
+    look_at = -pos  # Look at the origin
+    direction = torch.tensor([0.0, 1.0, 0.0]).unsqueeze(0).to(device)  # Up direction
+
+    # Generate a (1, 4, 3) transformation matrix
+    camera_proj = kal.render.camera.generate_transformation_matrix(pos, look_at, direction)  # Shape (1, 4, 3)
+
+    # Ensure it's (4, 4) by adding [0, 0, 0, 1] row
+    if camera_proj.shape == (1, 4, 3):
+        last_row = torch.tensor([[0.0, 0.0, 0.0, 1.0]]).to(camera_proj.device)  # Ensure same device
+        camera_proj = torch.cat([camera_proj.squeeze(0), last_row], dim=0)  # Shape now (4, 4)
+
+    return camera_proj
+
 def get_texture_map_from_color(mesh, color, H=224, W=224):
     num_faces = mesh.faces.shape[0]
     texture_map = torch.zeros(1, H, W, 3).to(device)
