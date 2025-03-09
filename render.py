@@ -28,8 +28,11 @@ class Renderer():
         faces = mesh.faces
         n_faces = faces.shape[0]
 
-        elev = torch.randn(num_views) * np.pi / std + center_elev
-        azim = torch.randn(num_views) * 2 * np.pi / std + center_azim
+        #elev = torch.randn(num_views) * np.pi / std + center_elev
+        #azim = torch.randn(num_views) * 2 * np.pi / std + center_azim
+        ran = range(0,num_views) / num_views                
+        elev = torch.tensor(ran)* np.pi / std + center_elev
+        azim = torch.tensor(ran)* 2 * np.pi / std + center_azim
         images = []
         masks = []
         rgb_mask = []
