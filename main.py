@@ -516,8 +516,10 @@ if __name__ == '__main__':
     Affloader.generate_clip_sentences()
     clip_sentences = Affloader.get_clip_sentences()
 
-    # rnumber = random.randint(0, len(semantic_labels) - 1)
-    rnumber = 0
+    #rnumber = 0
+    random.seed(args.seed)
+    rnumber = random.randint(0, len(shape_ids) - 1)
+
     shape_id = shape_ids[rnumber]
     coordinate = coordinates[rnumber]
     label = labels[rnumber]
@@ -532,7 +534,7 @@ if __name__ == '__main__':
         key = list(label.keys())[i]  # Get the first key
         value = label[key]
         print(clip_sentence[i])
-    #   optimize_affonet(args, clip_sentence=clip_sentence[i], filepath=pathfile, gt_label=value, obj=objfile)
+        optimize_affonet(args, clip_sentence=clip_sentence[i], filepath=pathfile, gt_label=value, obj=objfile)
 
     #using voxel mesh
     if args.voxel:
@@ -545,7 +547,7 @@ if __name__ == '__main__':
                 args.output_dir = f'voxel_results/demo_{args.object}_{labels[i]}'
                 optimize(args)
         else:
-            args, clip_text, obj_file_path, labels = voxel_from_mesh(args, Affloader)
+            args, clip_text, obj_file_path, labels = voxel_from_mesh(args, rnumber, Affloader)
             args.obj_path = obj_file_path
             for i in range(len(labels)):
                 args.classes = labels[i]

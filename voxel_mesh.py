@@ -69,7 +69,7 @@ def create_voxel_from_mesh(args):
     return args, clip_texts, obj_file_path, labels
 
 
-def voxel_from_mesh(args, Affloader):
+def voxel_from_mesh(args, rnumber, Affloader):
     data_dir = 'AffoNet'
     save_path = (os.path.join(data_dir, 'data_from_voxel'))
     Path(save_path).mkdir(parents=True, exist_ok=True)
@@ -81,8 +81,8 @@ def voxel_from_mesh(args, Affloader):
     Affloader.generate_clip_sentences()
     clip_sentences = Affloader.get_clip_sentences()
 
-    random.seed(args.seed)
-    rnumber = 0
+    #random.seed(args.seed)
+    rnumber = rnumber
     # rnumber = random.randint(0, len(shape_ids) - 1)
     shape_id = shape_ids[rnumber]
     coordinates = coordinates[rnumber]
