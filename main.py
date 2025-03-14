@@ -70,7 +70,8 @@ def optimize(args):
     np.random.seed(args.seed)
     torch.backends.cudnn.benchmark = False
     torch.backends.cudnn.deterministic = True
-    dev = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    # Load CLIP model
     clip_model, preprocess = clip.load(args.clipmodel, device, jit=args.jit)
 
     # Adjust output resolution depending on model type
@@ -90,8 +91,7 @@ def optimize(args):
 
     render = Renderer(dim=(args.render_res, args.render_res))
     mesh = Mesh(args.obj_path)
-    # load the mesh  加载mesh
-    MeshNormalizer(mesh)()  # Normalize the mesh to fit within a consistent space
+    MeshNormalizer(mesh)()
 
     # Initialize variables
     background = None
@@ -109,48 +109,57 @@ def optimize(args):
     clip_normalizer = transforms.Normalize((0.48145466, 0.4578275, 0.40821073), (0.26862954, 0.26130258, 0.27577711))
     clip_transform = transforms.Compose([
         transforms.Resize((res, res)),
-        #clip_normalizer,
-        preprocess
-    ])
-    augment_transform = transforms.Compose([
-        transforms.RandomResizedCrop(res, scale=(1, 1)),
-        transforms.RandomPerspective(fill=1, p=0.8, distortion_scale=0.5),
         clip_normalizer
     ])
 
+    if args.n_augs == 1:
+        augment_transform = transforms.Compose([
+            transforms.RandomResizedCrop(res, scale=(1, 1)),
+            transforms.RandomPerspective(fill=1, p=0.8, distortion_scale=0.5),
+            clip_normalizer
+        ])
+    # data augmentation here for exploring the different convergence ability
+    elif args.n_augs == 2:
+        augment_transform = transforms.Compose([
+            transforms.RandomResizedCrop(res, scale=(1, 1)),
+            transforms.GaussianBlur(kernel_size=5, sigma=(0.1, 2)),
+            clip_normalizer
+        ])
+    else:
+        augment_transform = transforms.Compose([
+            transforms.RandomResizedCrop(res, scale=(1, 1)),
+            transforms.Lambda(lambda res: add_gaussian_noise(res, std=0.05)),
+            clip_normalizer
+        ])
+
     # MLP Settings
-    # 高亮模型初始化
     mlp = NeuralHighlighter(args.depth, args.width, out_dim=args.n_classes,
                             positional_encoding=args.positional_encoding,
                             sigma=args.sigma).to(device)
-
-    # explanation : 1. n_calsses (since there are two colors: "highlighter" and "gray").
-    # num_vertices = number of vertices in the 3D mesh.
-
     optim = torch.optim.Adam(mlp.parameters(), args.learning_rate)
+
+    # vertices = copy.deepcopy(mesh.vertices)
+    # pred_class = mlp(vertices)
 
     # list of possible colors
     rgb_to_color = {(204 / 255, 1., 0.): "highlighter", (180 / 255, 180 / 255, 180 / 255): "gray"}
     color_to_rgb = {"highlighter": [204 / 255, 1., 0.], "gray": [180 / 255, 180 / 255, 180 / 255]}
-    full_colors = [[204 / 255, 1., 0.], [180 / 255, 180 / 255, 180 / 255]]  # first is yellow, second is gray
+    full_colors = [[204 / 255, 1., 0.], [180 / 255, 180 / 255, 180 / 255]]
     colors = torch.tensor(full_colors).to(device)
 
     # --- Prompt ---
     # pre-process multi_word_inputs
+    # args.object[0] = ' '.join(args.object[0].split('_'))
+    # for i in range(len(args.classes)):
+    #     args.classes[i] = ' '.join(args.classes[i].split('_'))
     # encode prompt with CLIP
-    #prompt = "A 3D render of a gray hat with a highlighted candle."
     prompt = args.prompt
     with torch.no_grad():
         prompt_token = clip.tokenize([prompt]).to(device)
         encoded_text = clip_model.encode_text(prompt_token)
         encoded_text = encoded_text / encoded_text.norm(dim=1, keepdim=True)
 
-    if args.point_cloud:
-        mlp.to(dev)
-        vertices = extract_vertices_from_ply('candle.ply', device=dev)
-    else:
-        vertices = copy.deepcopy(mesh.vertices)
-
+    vertices = copy.deepcopy(mesh.vertices)
     losses = []
 
     # Optimization loop
@@ -163,8 +172,10 @@ def optimize(args):
         # color and render mesh
         sampled_mesh = mesh
         color_mesh(pred_class, sampled_mesh, colors)
+
+        # here the sampled_mesh has been colored
         rendered_images, elev, azim = render.render_views(sampled_mesh, num_views=args.n_views,
-                                                          show=False,
+                                                          show=args.show,
                                                           center_azim=args.frontview_center[0],
                                                           center_elev=args.frontview_center[1],
                                                           std=args.frontview_std,
@@ -173,10 +184,7 @@ def optimize(args):
                                                           background=background)
 
         # Calculate CLIP Loss
-        # 计算CLIP lOSS
         loss = clip_loss(args, rendered_images, encoded_text, clip_transform, augment_transform, clip_model)
-
-        #
         loss.backward(retain_graph=True)
 
         optim.step()
@@ -187,15 +195,6 @@ def optimize(args):
 
         # report results
         if i % 100 == 0:
-            render.render_views(sampled_mesh, num_views=args.n_views,
-                                show=True,
-                                center_azim=args.frontview_center[0],
-                                center_elev=args.frontview_center[1],
-                                std=args.frontview_std,
-                                return_views=False,
-                                lighting=True,
-                                background=background)
-
             print("Last 100 CLIP score: {}".format(np.mean(losses[-100:])))
             save_renders(dir, i, rendered_images)
             with open(os.path.join(dir, "training_info.txt"), "a") as f:
@@ -286,7 +285,13 @@ def save_renders(dir, i, rendered_images, name=None):
         torchvision.utils.save_image(rendered_images, os.path.join(dir, 'renders/iter_{}.jpg'.format(i)))
 
 
-def optimize_affonet(agrs, clip_sentence, filepath, gt_label,obj):
+def add_gaussian_noise(res, mean=0.0, std=0.1):
+    noise = torch.randn_like(res) * std + mean
+    noisy_res = res + noise
+    return torch.clamp(noisy_res, 0, 1)
+
+
+def optimize_affonet(args, clip_sentence, filepath, gt_label, obj):
     # Constrain most sources of randomness
     # (some torch backwards functions within CLIP are non-determinstic)
     torch.manual_seed(args.seed)
@@ -530,11 +535,11 @@ if __name__ == '__main__':
     pathfile = path + semantic_label + "/" + shape_id + ".ply"
     objfile = path + semantic_label + "/" + shape_id + ".obj"
 
-    for i in range(len(clip_sentence)):
-        key = list(label.keys())[i]  # Get the first key
-        value = label[key]
-        print(clip_sentence[i])
-        optimize_affonet(args, clip_sentence=clip_sentence[i], filepath=pathfile, gt_label=value, obj=objfile)
+    # for i in range(len(clip_sentence)):
+    #     key = list(label.keys())[i]  # Get the first key
+    #     value = label[key]
+    #     print(clip_sentence[i])
+    #     optimize_affonet(args, clip_sentence=clip_sentence[i], filepath=pathfile, gt_label=value, obj=objfile)
 
     #using voxel mesh
     if args.voxel:
