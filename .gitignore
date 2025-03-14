@@ -1,3 +1,5 @@
 results/
+AffoNet/
+point_clouds/
 .vscode/
 __pycache__/
