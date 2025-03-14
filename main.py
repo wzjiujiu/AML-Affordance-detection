@@ -6,6 +6,7 @@ import numpy as np
 import os
 import random
 import torch
+import sys
 import torch.nn as nn
 import torchvision
 from neural_highlighter import NeuralHighlighter
@@ -16,11 +17,12 @@ from render import Renderer
 from tqdm import tqdm
 from torchvision import transforms
 from utils import device, color_mesh
-import sys
+
 from argparse import ArgumentParser
 import open3d as o3d
 from AffoLoad import PklLoader
-
+from converter import AffordNetDataset, generate_clip_sentences, point_to_voxel, voxel_to_meshs
+from voxel_mesh import create_voxel_from_mesh, voxel_from_mesh
 
 
 
@@ -58,7 +60,7 @@ def extract_vertices_from_ply(ply_file, device="cpu", alpha=0.03):
     return pcd, torch.tensor(vertices, dtype=torch.float32, device=device), mesh  # Move tensor to device
 
 
-def optimize(agrs):
+def optimize(args):
     # Constrain most sources of randomness
     # (some torch backwards functions within CLIP are non-determinstic)
     torch.manual_seed(args.seed)
@@ -69,8 +71,6 @@ def optimize(agrs):
     torch.backends.cudnn.benchmark = False
     torch.backends.cudnn.deterministic = True
     dev = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-    # Load CLIP model
     clip_model, preprocess = clip.load(args.clipmodel, device, jit=args.jit)
 
     # Adjust output resolution depending on model type
@@ -109,7 +109,8 @@ def optimize(agrs):
     clip_normalizer = transforms.Normalize((0.48145466, 0.4578275, 0.40821073), (0.26862954, 0.26130258, 0.27577711))
     clip_transform = transforms.Compose([
         transforms.Resize((res, res)),
-        clip_normalizer
+        #clip_normalizer,
+        preprocess
     ])
     augment_transform = transforms.Compose([
         transforms.RandomResizedCrop(res, scale=(1, 1)),
@@ -137,7 +138,8 @@ def optimize(agrs):
     # --- Prompt ---
     # pre-process multi_word_inputs
     # encode prompt with CLIP
-    prompt = "A 3D render of a gray hat with a highlighted candle."
+    #prompt = "A 3D render of a gray hat with a highlighted candle."
+    prompt = args.prompt
     with torch.no_grad():
         prompt_token = clip.tokenize([prompt]).to(device)
         encoded_text = clip_model.encode_text(prompt_token)
@@ -149,9 +151,6 @@ def optimize(agrs):
     else:
         vertices = copy.deepcopy(mesh.vertices)
 
-    #  This is a tensor of shape (num_vertices, 3), where each row represents the (x, y, z) coordinates of a vertex.
-    # 网格图所有坐标点提取
-
     losses = []
 
     # Optimization loop
@@ -162,7 +161,6 @@ def optimize(agrs):
         pred_class = mlp(vertices)
 
         # color and render mesh
-        # 图形渲染
         sampled_mesh = mesh
         color_mesh(pred_class, sampled_mesh, colors)
         rendered_images, elev, azim = render.render_views(sampled_mesh, num_views=args.n_views,
@@ -248,19 +246,22 @@ def save_final_results(args, dir, mesh, mlp, vertices, colors, render, backgroun
 
 
 def clip_loss(args, rendered_images, encoded_text, clip_transform, augment_transform, clip_model):
+    # here here loss should be small because of minus
     if args.n_augs == 0:
+        loss = 0.0
         clip_image = clip_transform(rendered_images)
         encoded_renders = clip_model.encode_image(clip_image)
         encoded_renders = encoded_renders / encoded_renders.norm(dim=1, keepdim=True)
         if args.clipavg == "view":
             if encoded_text.shape[0] > 1:
-                loss = torch.cosine_similarity(torch.mean(encoded_renders, dim=0),
+                loss -= torch.cosine_similarity(torch.mean(encoded_renders, dim=0),
                                                torch.mean(encoded_text, dim=0), dim=0)
             else:
-                loss = torch.cosine_similarity(torch.mean(encoded_renders, dim=0, keepdim=True),
+                loss -= torch.cosine_similarity(torch.mean(encoded_renders, dim=0, keepdim=True),
                                                encoded_text)
         else:
-            loss = torch.mean(torch.cosine_similarity(encoded_renders, encoded_text))
+            loss -= torch.mean(torch.cosine_similarity(encoded_renders, encoded_text))
+    # here loss should be small because of minus and augmentation
     elif args.n_augs > 0:
         loss = 0.0
         for _ in range(args.n_augs):
@@ -465,38 +466,13 @@ def compute_mIOU(gt_mask, pred_mask, num_classes):
 
     return np.mean(ious)
 
-
 if __name__ == '__main__':
-    # Simulate command-line arguments in Colab
-    sys.argv = [
-        'script_name',  # Placeholder for the script name
-        '--seed', '42',
-        '--obj_path', 'data/candle.obj',
-        '--output_dir', 'results/segment/1',
-        '--prompt', 'a pig with pants',
-        '--object', 'cow',
-        '--classes', 'sphere', 'cube',
-        '--background', '1.0', '1.0', '1.0',
-        '--n_views', '5',
-        '--frontview_std', '4',
-        '--frontview_center', '0', '0',
-        '--show',
-        '--n_augs', '1',
-        '--clipavg', 'view',
-        '--render_res', '224',
-        '--clipmodel', 'ViT-L/14',
-        '--depth', '4',
-        '--width', '256',
-        '--n_classes', '2',
-        '--sigma', '5.0',
-        '--learning_rate', '0.0001',
-        '--n_iter', '2500'
-    ]
 
     # Define your parser
     parser = ArgumentParser()
 
     # Add arguments as before
+    parser.add_argument('--voxel', type=str, default=True)   #using voxel
     parser.add_argument('--seed', type=int, default=0)
     parser.add_argument('--obj_path', type=str, default='data/candle.obj')
     parser.add_argument('--output_dir', type=str, default='results/segment/1')
@@ -523,11 +499,9 @@ if __name__ == '__main__':
     parser.add_argument('--point_cloud', action='store_false', help="Disable point cloud mode (default: True)")
 
     args = parser.parse_args()
-    print(args)
-    # optimize(args)
 
+    #data load
     path = 'point_clouds/'
-
     Affloader = PklLoader("AffoNet/full_shape_val_data.pkl")
 
     Affloader.load_data()
@@ -550,11 +524,31 @@ if __name__ == '__main__':
     affordance = affordances[rnumber]
     clip_sentence = clip_sentences[rnumber]
     semantic_label = semantic_labels[rnumber]
+
     pathfile = path + semantic_label + "/" + shape_id + ".ply"
-    objfile = path + semantic_label  + "/" + shape_id + ".obj"
+    objfile = path + semantic_label + "/" + shape_id + ".obj"
 
     for i in range(len(clip_sentence)):
         key = list(label.keys())[i]  # Get the first key
         value = label[key]
         print(clip_sentence[i])
-        optimize_affonet(args, clip_sentence=clip_sentence[i], filepath=pathfile, gt_label=value,obj=objfile)
+    #   optimize_affonet(args, clip_sentence=clip_sentence[i], filepath=pathfile, gt_label=value, obj=objfile)
+
+    #using voxel mesh
+    if args.voxel:
+        if data is None:
+            args, clip_text, obj_file_path, labels = create_voxel_from_mesh(args)
+            args.obj_path = obj_file_path
+            for i in range(len(labels)):
+                args.classes = labels[i]
+                args.prompt = clip_text[i]
+                args.output_dir = f'voxel_results/demo_{args.object}_{labels[i]}'
+                optimize(args)
+        else:
+            args, clip_text, obj_file_path, labels = voxel_from_mesh(args, Affloader)
+            args.obj_path = obj_file_path
+            for i in range(len(labels)):
+                args.classes = labels[i]
+                args.prompt = clip_text[i]
+                args.output_dir = f'voxel_results/demo_{args.object}_{labels[i]}'
+                optimize(args)
