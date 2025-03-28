@@ -4,3 +4,5 @@ point_clouds/
 voxel_results/
 .vscode/
 __pycache__/
+point_clouds/
+AffoNet/
