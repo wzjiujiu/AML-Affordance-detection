@@ -5,82 +5,35 @@ from utils import device
 import copy
 import numpy as np
 import PIL
-import open3d as o3d
 
 class Mesh():
-    def __init__(self,input_data,color=torch.tensor([0.0,0.0,1.0])):
-        """
-                Initialize Mesh from Open3D TriangleMesh object.
+    def __init__(self,obj_path,color=torch.tensor([0.0,0.0,1.0])):
+        if ".obj" in obj_path:
+            mesh = kal.io.obj.import_mesh(obj_path, with_normals=True)
+        elif ".off" in obj_path:
+            mesh = kal.io.off.import_mesh(obj_path)
+        else:
+            raise ValueError(f"{obj_path} extension not implemented in mesh reader.")
+        self.vertices = mesh.vertices.to(device)
+        self.faces = mesh.faces.to(device)
+        self.vertex_normals = None
+        self.face_normals = None
+        self.texture_map = None
+        self.face_uvs = None
+        if ".obj" in obj_path:
+            if mesh.vertex_normals is not None:
+                self.vertex_normals = mesh.vertex_normals.to(device).float()
 
-                Args:
-                    mesh (open3d.geometry.TriangleMesh): Input Open3D mesh.
-                    color (torch.tensor, optional): Color for the mesh. Defaults to blue.
-                """
-        if isinstance(input_data, o3d.geometry.TriangleMesh):
-            # Initialize from Open3D TriangleMesh object
-            self.vertices = torch.tensor(np.asarray(input_data.vertices), dtype=torch.float32).to(device)
-            self.faces = torch.tensor(np.asarray(input_data.triangles), dtype=torch.int64).to(device)
-            self.vertex_normals = None
-            self.face_normals = None
-            self.texture_map = None
-            self.face_uvs = None
-
-            # Handle vertex normals if available
-            if input_data.has_vertex_normals():
-                self.vertex_normals = torch.tensor(np.asarray(input_data.vertex_normals), dtype=torch.float32).to(
-                    device)
-                # Normalize the normals
+                # Normalize
                 self.vertex_normals = torch.nn.functional.normalize(self.vertex_normals)
 
-            # Handle face normals if available
-            if input_data.has_triangle_normals():
-                self.face_normals = torch.tensor(np.asarray(input_data.triangle_normals), dtype=torch.float32).to(
-                    device)
-                # Normalize the face normals
+            if mesh.face_normals is not None:
+                self.face_normals = mesh.face_normals.to(device).float()
+
+                # Normalize
                 self.face_normals = torch.nn.functional.normalize(self.face_normals)
 
-            # Optionally handle texture maps or colors
-            self.set_mesh_color(color)
-
-        elif isinstance(input_data, str):
-            # Initialize from file path (obj or off)
-            file_path = input_data.lower()
-            if file_path.endswith(".obj"):
-                # Load .obj file using Kaolin (or similar)
-                mesh = kal.io.obj.import_mesh(file_path, with_normals=True)
-                self.vertices = mesh.vertices.to(device)
-                self.faces = mesh.faces.to(device)
-                self.vertex_normals = None
-                self.face_normals = None
-                self.texture_map = None
-                if mesh.vertex_normals is not None:
-                    self.vertex_normals = mesh.vertex_normals.to(device).float()
-                    # Normalize
-                    self.vertex_normals = torch.nn.functional.normalize(self.vertex_normals)
-
-                if mesh.face_normals is not None:
-                    self.face_normals = mesh.face_normals.to(device).float()
-                    # Normalize
-                    self.face_normals = torch.nn.functional.normalize(self.face_normals)
-
-                # Handle color
-                self.set_mesh_color(color)
-
-            elif file_path.endswith(".off"):
-                # Load .off file using Kaolin (or similar)
-                mesh = kal.io.off.import_mesh(file_path)
-                self.vertices = mesh.vertices.to(device)
-                self.faces = mesh.faces.to(device)
-                self.vertex_normals = None
-                self.face_normals = None
-                self.texture_map = None
-                self.set_mesh_color(color)
-
-            else:
-                raise ValueError(f"Unsupported file extension in {file_path}")
-
-        else:
-            raise ValueError("Input data must be either an Open3D TriangleMesh or a file path (obj/off).")
+        self.set_mesh_color(color)
 
     def standardize_mesh(self,inplace=False):
         mesh = self if inplace else copy.deepcopy(self)
