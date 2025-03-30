@@ -118,7 +118,8 @@ def optimize(args):
     # for i in range(len(args.classes)):
     #     args.classes[i] = ' '.join(args.classes[i].split('_'))
     # encode prompt with CLIP
-    prompt = args.prompt
+    prompt = " "+ .join(args.prompt)
+    #prompt = args.prompt
     with torch.no_grad():
         prompt_token = clip.tokenize([prompt]).to(device)
         encoded_text = clip_model.encode_text(prompt_token)
