@@ -20,7 +20,7 @@ from render import Renderer
 from tqdm import tqdm
 from torch.autograd import grad
 from torchvision import transforms
-from utils import device, color_mesh
+from utils import device, color_mesh, compute_miou
 from voxel_mesh import create_voxel_from_mesh
 from approximate_mesh import create_appro_mesh
 
@@ -76,24 +76,17 @@ def optimize(args):
         transforms.Resize((res, res)),
         clip_normalizer
     ])
-
+    # data augmentation here for exploring the different convergence ability
     if args.n_augs == 1:
         augment_transform = transforms.Compose([
             transforms.RandomResizedCrop(res, scale=(1, 1)),
             transforms.RandomPerspective(fill=1, p=0.8, distortion_scale=0.5),
-            clip_normalizer
-        ])
-    # data augmentation here for exploring the different convergence ability
-    elif args.n_augs == 2:
-        augment_transform = transforms.Compose([
-            transforms.RandomResizedCrop(res, scale=(1, 1)),
-            transforms.GaussianBlur(kernel_size=5, sigma=(0.1, 2)),
-            clip_normalizer
-        ])
-    else:
-        augment_transform = transforms.Compose([
-            transforms.RandomResizedCrop(res, scale=(1, 1)),
-            transforms.Lambda(lambda res: add_gaussian_noise(res, std=0.05)),
+            transforms.RandomResizedCrop(res, scale=(0.8, 1.0), ratio=(0.9, 1.1)),
+            transforms.RandomHorizontalFlip(p=0.5),
+            transforms.RandomRotation(degrees=15),
+            transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.05),
+            transforms.GaussianBlur(kernel_size=5, sigma=(0.1, 2.0)),
+            transforms.Lambda(lambda img: add_gaussian_noise(img, std=0.05)),
             clip_normalizer
         ])
 
@@ -158,6 +151,11 @@ def optimize(args):
         # update variables + record loss
         with torch.no_grad():
             losses.append(loss.item())
+
+        pre_mask = torch.argmax(pred_class, dim=1)
+        print(f'pre_mask shape: {pre_mask.shape}')
+        MIOU = compute_miou(pre_mask, args.gt_mask)
+        print("MIOU score: {}".format(MIOU))
 
         # report results
         if i % 100 == 0:
@@ -256,7 +254,6 @@ def add_gaussian_noise(res, mean=0.0, std=0.1):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
-
     # general
     parser.add_argument('--seed', type=int, default=0)
 
@@ -296,16 +293,18 @@ if __name__ == '__main__':
 
     # addition parameter
 
-    parser.add_argument('--voxel', type=str, default=False)  # voxel
+    parser.add_argument('--voxel', type=str, default=True)  # voxel
     parser.add_argument('--appro_mesh', type=str, default=False)  # appro_mesh
+    parser.add_argument('--gt_mask', type=float)
 
     args = parser.parse_args()
 
     if args.voxel:
         args, clip_text, obj_file_path, labels = create_voxel_from_mesh(args)
         args.obj_path = obj_file_path
-        for i in range(len(labels)):
-            args.classes = labels[i]
+        for i, (key, values) in enumerate(labels.items()):
+            args.classes = key
+            args.gt_mask = values
             args.prompt = clip_text[i]
             args.output_dir = f'voxel_results/demo_{args.object}_{labels[i]}'
             print(args.prompt)
@@ -314,13 +313,13 @@ if __name__ == '__main__':
     elif args.appro_mesh:
         args, clip_text, obj_file_path, labels = create_appro_mesh(args)
         args.obj_path = obj_file_path
-        for i in range(len(labels)):
-            args.classes = labels[i]
+        for i, (key, values) in enumerate(labels.items()):
+            args.classes = key
+            args.gt_mask = values
             args.prompt = clip_text[i]
             args.output_dir = f'appromesh_results/demo_{args.object}_{labels[i]}'
             print(args.prompt)
             optimize(args)
-
     else:
         optimize(args)
 
