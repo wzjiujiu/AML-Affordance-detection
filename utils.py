@@ -94,15 +94,22 @@ def segment2rgb(pred_class, colors):
 
 def compute_miou(pred_mask, gt_mask):
 
-    assert pred_mask.shape[0] == gt_mask.shape[0]
+    if pred_mask.shape[0] != gt_mask.shape[0]:
+        pred_mask = torch.nn.functional.interpolate(
+            pred_mask.unsqueeze(0).unsqueeze(0),
+            size=gt_mask.shape[0],
+            mode='linear'
+        ).squeeze()
 
-    # Ensure gt_mask is 1D if it has an extra dimension
     if gt_mask.ndim == 2 and gt_mask.shape[1] == 1:
-        gt_mask = gt_mask.squeeze(1)  # Convert from (N,1) → (N,)
+        gt_mask = gt_mask.squeeze(1)
 
-    gt_mask=(gt_mask != 0).astype(np.uint8)
+    gt_mask = (gt_mask != 0).to(torch.bool)
+    pred_mask = (pred_mask != 0).to(torch.bool)
+    pred_mask = pred_mask.cpu().numpy()
+    gt_mask = gt_mask.cpu().numpy()
 
     intersection = np.logical_and(pred_mask, gt_mask).sum()
     union = np.logical_or(pred_mask, gt_mask).sum()
 
-    return intersection / union if union > 0 else 0.0  # Avoid division by zero
+    return intersection / union if union > 0 else 0.0

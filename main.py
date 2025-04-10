@@ -152,14 +152,15 @@ def optimize(args):
         with torch.no_grad():
             losses.append(loss.item())
 
-        pre_mask = torch.argmax(pred_class, dim=1)
-        print(f'pre_mask shape: {pre_mask.shape}')
-        MIOU = compute_miou(pre_mask, args.gt_mask)
+        pre_mask = torch.argmax(pred_class, dim=1).float()
+        gt_mask = torch.tensor(args.gt_mask, dtype=torch.float32).squeeze(1)
+        MIOU = compute_miou(pre_mask,gt_mask)
         print("MIOU score: {}".format(MIOU))
 
         # report results
         if i % 100 == 0:
             print("Last 100 CLIP score: {}".format(np.mean(losses[-100:])))
+            print(rendered_images)
             save_renders(dir, i, rendered_images)
             with open(os.path.join(dir, "training_info.txt"), "a") as f:
                 f.write(f"For iteration {i}... Prompt: {prompt}, Last 100 avg CLIP score: {np.mean(losses[-100:])}, CLIP score {losses[-1]}\n")
@@ -304,9 +305,9 @@ if __name__ == '__main__':
         args.obj_path = obj_file_path
         for i, (key, values) in enumerate(labels.items()):
             args.classes = key
-            args.gt_mask = values
+            args.gt_mask = values.tolist()
             args.prompt = clip_text[i]
-            args.output_dir = f'voxel_results/demo_{args.object}_{labels[i]}'
+            args.output_dir = f'voxel_results/demo_{args.object}_{key}'
             print(args.prompt)
             optimize(args)
 
@@ -315,9 +316,9 @@ if __name__ == '__main__':
         args.obj_path = obj_file_path
         for i, (key, values) in enumerate(labels.items()):
             args.classes = key
-            args.gt_mask = values
+            args.gt_mask = values.tolist()
             args.prompt = clip_text[i]
-            args.output_dir = f'appromesh_results/demo_{args.object}_{labels[i]}'
+            args.output_dir = f'voxel_results/demo_{args.object}_{key}'
             print(args.prompt)
             optimize(args)
     else:

@@ -59,22 +59,13 @@ class AffordNetDataset(Dataset):
 
 def filter_non_zero_entries(input):
     # Create a new dictionary to store the filtered entries
-    filtered_labels = []
+    filtered_dict = {}
     # Iterate over each item in the input dictionary
-    for key, value in input.items():
-        # Check if the numpy array is not all zeros
+    for key, values in input.items():
+        if not np.all(values == 0):
+            filtered_dict[key] = values
 
-        #return a dict(label:values)
-        # if np.any(value):
-        #     filtered_dict = {}
-        #     filtered_dict[key] = value
-        #     filtered_labels.append(filtered_dict)
-
-        # return a list(label)
-        if np.any(value):
-            filtered_label = key
-            filtered_labels.append(filtered_label)
-    return filtered_labels
+    return filtered_dict
 
 def generate_clip_sentences(semantic_class, labels):
     # Generate a list of descriptions for each affordance
