@@ -118,8 +118,8 @@ def optimize(args):
     # for i in range(len(args.classes)):
     #     args.classes[i] = ' '.join(args.classes[i].split('_'))
     # encode prompt with CLIP
-    prompt = " "+ .join(args.prompt)
-    #prompt = args.prompt
+    #prompt = " "+ .join(args.prompt)
+    prompt = args.prompt
     with torch.no_grad():
         prompt_token = clip.tokenize([prompt]).to(device)
         encoded_text = clip_model.encode_text(prompt_token)
@@ -265,7 +265,7 @@ if __name__ == '__main__':
     parser.add_argument('--output_dir', type=str, default='results/segment/1')
 
     # mesh+prompt info
-    parser.add_argument('--prompt', nargs="+", default='a pig with pants')
+    parser.add_argument('--prompt', type=str, default='a pig with pants')
     parser.add_argument('--object', nargs=1, default='cow')
     parser.add_argument('--classes', nargs="+", default='sphere cube')
 
