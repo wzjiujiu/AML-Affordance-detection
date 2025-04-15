@@ -78,20 +78,38 @@ def optimize(args):
         transforms.Resize((res, res)),
         clip_normalizer
     ])
-
     # data augmentation here for exploring the different convergence ability
-    augment_transform = transforms.Compose([
-        transforms.RandomResizedCrop(res, scale=(1, 1)),
-        transforms.RandomPerspective(fill=1, p=0.8, distortion_scale=0.5),
-        transforms.RandomResizedCrop(res, scale=(0.8, 1.0), ratio=(0.9, 1.1)),
-        transforms.RandomHorizontalFlip(p=0.5),
-        transforms.RandomRotation(degrees=15),
-        transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.05),
-        transforms.GaussianBlur(kernel_size=5, sigma=(0.1, 2.0)),
-        transforms.Lambda(lambda img: add_gaussian_noise(img, std=0.05)),
-        clip_normalizer
-    ])
-
+    if args.n_augs > 0:
+        if args.type_aug == 1:
+            ugment_transform = transforms.Compose([
+                transforms.RandomResizedCrop(res, scale=(1, 1)),
+                transforms.RandomPerspective(fill=1, p=0.8, distortion_scale=0.5),
+                clip_normalizer
+            ])
+        elif args.type_aug == 2:
+            augment_transform = transforms.Compose([
+                transforms.RandomResizedCrop(res, scale=(1, 1)),
+                transforms.GaussianBlur(kernel_size=5, sigma=(0.1, 2)),
+                clip_normalizer
+            ])
+        elif args.type_aug == 3:
+            augment_transform = transforms.Compose([
+                transforms.RandomResizedCrop(res, scale=(1, 1)),
+                transforms.Lambda(lambda res: add_gaussian_noise(res, std=0.05)),
+                clip_normalizer
+            ])
+        elif args.type_aug == 4:
+            augment_transform = transforms.Compose([
+                transforms.RandomResizedCrop(res, scale=(1, 1)),
+                transforms.RandomPerspective(fill=1, p=0.8, distortion_scale=0.5),
+                transforms.RandomResizedCrop(res, scale=(0.8, 1.0), ratio=(0.9, 1.1)),
+                transforms.RandomHorizontalFlip(p=0.5),
+                transforms.RandomRotation(degrees=15),
+                transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.05),
+                transforms.GaussianBlur(kernel_size=5, sigma=(0.1, 2.0)),
+                transforms.Lambda(lambda img: add_gaussian_noise(img, std=0.05)),
+                clip_normalizer
+            ])
 
     # MLP Settings
     mlp = NeuralHighlighter(args.depth, args.width, out_dim=args.n_classes, positional_encoding=args.positional_encoding,
