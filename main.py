@@ -10,6 +10,7 @@ import random
 import torch
 import torch.nn as nn
 import torchvision
+import matplotlib.pyplot as plt
 
 from itertools import permutations, product
 from neural_highlighter import NeuralHighlighter
@@ -111,7 +112,7 @@ def optimize(args):
     # for i in range(len(args.classes)):
     #     args.classes[i] = ' '.join(args.classes[i].split('_'))
     # encode prompt with CLIP
-    #prompt = " "+ .join(args.prompt)
+    # prompt = " "+ .join(args.prompt)
     prompt = args.prompt
     with torch.no_grad():
         prompt_token = clip.tokenize([prompt]).to(device)
@@ -120,6 +121,7 @@ def optimize(args):
 
     vertices = copy.deepcopy(mesh.vertices)
     losses = []
+    mious = []
 
     # Optimization loop
     for i in tqdm(range(args.n_iter)):
@@ -152,18 +154,22 @@ def optimize(args):
         with torch.no_grad():
             losses.append(loss.item())
 
-        pre_mask = torch.argmax(pred_class, dim=1).float()
-        gt_mask = torch.tensor(args.gt_mask, dtype=torch.float32).squeeze(1)
-        MIOU = compute_miou(pre_mask,gt_mask)
-        print("MIOU score: {}".format(MIOU))
+        if args.voxel or args.appro_mesh:
+            pre_mask = torch.argmax(pred_class, dim=1).float()
+            gt_mask = torch.tensor(args.gt_mask, dtype=torch.float32).squeeze(1)
+            MIOU = compute_miou(pre_mask, gt_mask)
+            mious.append(MIOU)
 
         # report results
         if i % 100 == 0:
-            print("Last 100 CLIP score: {}".format(np.mean(losses[-100:])))
-            print(rendered_images)
+            print(f"Last 100 CLIP score: {np.mean(losses[-100:])}, Last 100 MIOU score:{np.mean(mious[-100:])}")
+            #print(rendered_images)
             save_renders(dir, i, rendered_images)
             with open(os.path.join(dir, "training_info.txt"), "a") as f:
-                f.write(f"For iteration {i}... Prompt: {prompt}, Last 100 avg CLIP score: {np.mean(losses[-100:])}, CLIP score {losses[-1]}\n")
+                if args.voxel or args.appro_mesh:
+                    f.write(f"For iteration {i}... Prompt: {prompt}, Last 100 avg CLIP score: {np.mean(losses[-100:])}, CLIP score {losses[-1]}, Last 100 avg MIOU score: {np.mean(mious[-100:])}\n")
+                else:
+                    f.write(f"For iteration {i}... Prompt: {prompt}, Last 100 avg CLIP score: {np.mean(losses[-100:])}, CLIP score {losses[-1]}\n")
 
     # re-initialize background color
     if args.background is not None:
@@ -237,12 +243,24 @@ def clip_loss(args, rendered_images, encoded_text, clip_transform, augment_trans
         else:
             loss -= torch.mean(torch.cosine_similarity(encoded_renders, encoded_text))
     return loss
-
-def save_renders(dir, i, rendered_images, name=None):
+def save_renders(dir, i, rendered_images, name=None, show=False):
     if name is not None:
-        torchvision.utils.save_image(rendered_images, os.path.join(dir, name))
+        if not os.path.splitext(name)[1]:
+            name += ".jpg"
+        save_path = os.path.join(dir, name)
     else:
-        torchvision.utils.save_image(rendered_images, os.path.join(dir, 'renders/iter_{}.jpg'.format(i)))
+        save_path = os.path.join(dir, f'renders/iter_{i}.jpg')
+
+    os.makedirs(os.path.dirname(save_path), exist_ok=True)
+    torchvision.utils.save_image(rendered_images, save_path)
+
+    if show:
+        img = rendered_images[0].cpu().detach()
+        img = transforms.ToPILImage()(img)
+        plt.imshow(img)
+        plt.axis('off')
+        plt.title(f"Render @ Iteration {i}")
+        plt.show()
 
 
 # generate the gaussian noise for data augmentation
@@ -293,7 +311,6 @@ if __name__ == '__main__':
     parser.add_argument('--n_iter', type=int, default=2500)
 
     # addition parameter
-
     parser.add_argument('--voxel', type=str, default=True)  # voxel
     parser.add_argument('--appro_mesh', type=str, default=False)  # appro_mesh
     parser.add_argument('--gt_mask', type=float)
