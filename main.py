@@ -79,26 +79,27 @@ def optimize(args):
         clip_normalizer
     ])
     # data augmentation here for exploring the different convergence ability
+    augment_transform = transforms.Compose([])
     if args.n_augs > 0:
-        if args.type_aug == 1:
-            ugment_transform = transforms.Compose([
+        if args.n_augs == 1:
+            augment_transform = transforms.Compose([
                 transforms.RandomResizedCrop(res, scale=(1, 1)),
                 transforms.RandomPerspective(fill=1, p=0.8, distortion_scale=0.5),
                 clip_normalizer
             ])
-        elif args.type_aug == 2:
+        elif args.n_augs == 2:
             augment_transform = transforms.Compose([
                 transforms.RandomResizedCrop(res, scale=(1, 1)),
                 transforms.GaussianBlur(kernel_size=5, sigma=(0.1, 2)),
                 clip_normalizer
             ])
-        elif args.type_aug == 3:
+        elif args.n_augs == 3:
             augment_transform = transforms.Compose([
                 transforms.RandomResizedCrop(res, scale=(1, 1)),
                 transforms.Lambda(lambda res: add_gaussian_noise(res, std=0.05)),
                 clip_normalizer
             ])
-        elif args.type_aug == 4:
+        elif args.n_augs == 4:
             augment_transform = transforms.Compose([
                 transforms.RandomResizedCrop(res, scale=(1, 1)),
                 transforms.RandomPerspective(fill=1, p=0.8, distortion_scale=0.5),
@@ -184,7 +185,8 @@ def optimize(args):
         if i % 100 == 0:
             if args.voxel or args.appro_mesh:
                 print(f"Last 100 CLIP score: {np.mean(losses[-100:])}, Last 100 MIOU score:{np.mean(mious[-100:])}")
-            print(f"Last 100 CLIP score: {np.mean(losses[-100:])}")
+            else:
+                print(f"Last 100 CLIP score: {np.mean(losses[-100:])}")
             save_renders(dir, i, rendered_images)
             with open(os.path.join(dir, "training_info.txt"), "a") as f:
                 if args.voxel or args.appro_mesh:
@@ -328,7 +330,7 @@ if __name__ == '__main__':
     parser.add_argument('--n_iter', type=int, default=2500)
 
     # addition parameter
-    parser.add_argument('--voxel', type=str, default=True)  # voxel
+    parser.add_argument('--voxel', type=str, default=False)  # voxel
     parser.add_argument('--appro_mesh', type=str, default=False)  # appro_mesh
     parser.add_argument('--gt_mask', type=float)
 
@@ -341,7 +343,7 @@ if __name__ == '__main__':
             args.classes = key
             args.gt_mask = values.tolist()
             args.prompt = clip_text[i]
-            args.output_dir = f'voxel_results/demo_{args.object}_{key}'
+            args.output_dir = f'voxel_results/demo_{args.object}_{key}_{args.n_augs}_{args.learning_rate}_{args.depth}_{args.n_views}'
             print(args.prompt)
             optimize(args)
 
@@ -352,7 +354,7 @@ if __name__ == '__main__':
             args.classes = key
             args.gt_mask = values.tolist()
             args.prompt = clip_text[i]
-            args.output_dir = f'voxel_results/demo_{args.object}_{key}'
+            args.output_dir = f'appro_results/demo_{args.object}_{key}_{args.n_augs}_{args.learning_rate}_{args.depth}_{args.n_views}'
             print(args.prompt)
             optimize(args)
     else:

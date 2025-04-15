@@ -7,25 +7,25 @@ import kaolin as kal
 import open3d as o3d
 
 affordance_descriptions = {
-            "grasp": "a highlighted handle for grasping",
-            "contain": "a highlighted space for containing objects",
-            "lift": "a highlighted section for lifting",
-            "openable": "a highlighted part that can be opened",
-            "layable": "a surface for laying items",
-            "sittable": "a seat for sitting",
-            "support": "a structure for support",
-            "wrap_grasp": "an area that can be wrap-grasped",
-            "pourable": "a spout for pouring",
-            "move": "a part that enables movement",
-            "display": "a surface for displaying objects",
-            "pushable": "a highlighted panel for pushing",
-            "pull": "a handle for pulling",
-            "listen": "a part for listening",
-            "wear": "a wearable section",
-            "press": "a button for pressing",
-            "cut": "a sharp edge for cutting",
-            "stab": "a pointed section for stabbing"
-        }
+    "grasp": "a region of the object designed to be grasped by hand",
+    "contain": "a part of the object that can hold or contain other items",
+    "lift": "a part of the object that allows it to be lifted",
+    "openable": "a part of the object that can be opened or closed, like a lid or door",
+    "layable": "a flat surface on the object suitable for laying things on",
+    "sittable": "a surface of the object that is suitable for sitting",
+    "support": "a structural part of the object that provides support or balance",
+    "wrap_grasp": "a region of the object that can be grasped using a wrap-around grip",
+    "pourable": "a spout or edge used for pouring liquid or contents",
+    "move": "a part of the object that enables or supports movement",
+    "display": "a surface on the object where things can be displayed or placed",
+    "pushable": "a part of the object that is meant to be pushed, like a button or panel",
+    "pull": "a part of the object that is designed to be pulled, like a handle",
+    "listen": "a part of the object where sound is emitted or received, such as a speaker or mic",
+    "wear": "a section of the object that is designed to be worn on the body",
+    "press": "a button or control that can be pressed",
+    "cut": "a sharp edge of the object used for cutting",
+    "stab": "a pointed part of the object used for stabbing or piercing"
+}
 
 class AffordNetDataset(Dataset):
     def __init__(self, data_dir, data):
