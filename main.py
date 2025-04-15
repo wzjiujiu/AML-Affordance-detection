@@ -12,6 +12,7 @@ import torch.nn as nn
 import torchvision
 import matplotlib.pyplot as plt
 
+from IPython.display import Image, display, clear_output
 from itertools import permutations, product
 from neural_highlighter import NeuralHighlighter
 from Normalization import MeshNormalizer
@@ -77,19 +78,20 @@ def optimize(args):
         transforms.Resize((res, res)),
         clip_normalizer
     ])
+
     # data augmentation here for exploring the different convergence ability
-    if args.n_augs == 1:
-        augment_transform = transforms.Compose([
-            transforms.RandomResizedCrop(res, scale=(1, 1)),
-            transforms.RandomPerspective(fill=1, p=0.8, distortion_scale=0.5),
-            transforms.RandomResizedCrop(res, scale=(0.8, 1.0), ratio=(0.9, 1.1)),
-            transforms.RandomHorizontalFlip(p=0.5),
-            transforms.RandomRotation(degrees=15),
-            transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.05),
-            transforms.GaussianBlur(kernel_size=5, sigma=(0.1, 2.0)),
-            transforms.Lambda(lambda img: add_gaussian_noise(img, std=0.05)),
-            clip_normalizer
-        ])
+    augment_transform = transforms.Compose([
+        transforms.RandomResizedCrop(res, scale=(1, 1)),
+        transforms.RandomPerspective(fill=1, p=0.8, distortion_scale=0.5),
+        transforms.RandomResizedCrop(res, scale=(0.8, 1.0), ratio=(0.9, 1.1)),
+        transforms.RandomHorizontalFlip(p=0.5),
+        transforms.RandomRotation(degrees=15),
+        transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.05),
+        transforms.GaussianBlur(kernel_size=5, sigma=(0.1, 2.0)),
+        transforms.Lambda(lambda img: add_gaussian_noise(img, std=0.05)),
+        clip_normalizer
+    ])
+
 
     # MLP Settings
     mlp = NeuralHighlighter(args.depth, args.width, out_dim=args.n_classes, positional_encoding=args.positional_encoding,
@@ -162,8 +164,9 @@ def optimize(args):
 
         # report results
         if i % 100 == 0:
-            print(f"Last 100 CLIP score: {np.mean(losses[-100:])}, Last 100 MIOU score:{np.mean(mious[-100:])}")
-            #print(rendered_images)
+            if args.voxel or args.appro_mesh:
+                print(f"Last 100 CLIP score: {np.mean(losses[-100:])}, Last 100 MIOU score:{np.mean(mious[-100:])}")
+            print(f"Last 100 CLIP score: {np.mean(losses[-100:])}")
             save_renders(dir, i, rendered_images)
             with open(os.path.join(dir, "training_info.txt"), "a") as f:
                 if args.voxel or args.appro_mesh:
@@ -212,7 +215,7 @@ def save_final_results(args, dir, mesh, mlp, vertices, colors, render, backgroun
         final_color = torch.where(max_idx==0, highlight, gray)
         objbase, extension = os.path.splitext(os.path.basename(args.obj_path))
         mesh.export(os.path.join(dir, f"{objbase}_{args.classes[0]}.ply"), extension="ply", color=final_color)
-        save_renders(dir, 0, rendered_images, name='final_render.jpg')
+        save_renders(dir, 0, rendered_images, show=True, name='final_render.jpg')
         
 
 def clip_loss(args, rendered_images, encoded_text, clip_transform, augment_transform, clip_model):
@@ -230,20 +233,21 @@ def clip_loss(args, rendered_images, encoded_text, clip_transform, augment_trans
         else:
             loss = torch.mean(torch.cosine_similarity(encoded_renders, encoded_text))
     elif args.n_augs > 0:
-        loss = 0.0
-        augmented_image = augment_transform(rendered_images)
-        encoded_renders = clip_model.encode_image(augmented_image)
-        if args.clipavg == "view":
-            if encoded_text.shape[0] > 1:
-                loss -= torch.cosine_similarity(torch.mean(encoded_renders, dim=0),
-                                                    torch.mean(encoded_text, dim=0), dim=0)
+        for _ in range(args.n_augs):
+            loss = 0.0
+            augmented_image = augment_transform(rendered_images)
+            encoded_renders = clip_model.encode_image(augmented_image)
+            if args.clipavg == "view":
+                if encoded_text.shape[0] > 1:
+                    loss -= torch.cosine_similarity(torch.mean(encoded_renders, dim=0),
+                                                        torch.mean(encoded_text, dim=0), dim=0)
+                else:
+                    loss -= torch.cosine_similarity(torch.mean(encoded_renders, dim=0, keepdim=True),
+                                                        encoded_text)
             else:
-                loss -= torch.cosine_similarity(torch.mean(encoded_renders, dim=0, keepdim=True),
-                                                    encoded_text)
-        else:
-            loss -= torch.mean(torch.cosine_similarity(encoded_renders, encoded_text))
+                loss -= torch.mean(torch.cosine_similarity(encoded_renders, encoded_text))
     return loss
-def save_renders(dir, i, rendered_images, name=None, show=False):
+def save_renders(dir, i, rendered_images, show=False, name=None):
     if name is not None:
         if not os.path.splitext(name)[1]:
             name += ".jpg"
@@ -255,13 +259,8 @@ def save_renders(dir, i, rendered_images, name=None, show=False):
     torchvision.utils.save_image(rendered_images, save_path)
 
     if show:
-        img = rendered_images[0].cpu().detach()
-        img = transforms.ToPILImage()(img)
-        plt.imshow(img)
-        plt.axis('off')
-        plt.title(f"Render @ Iteration {i}")
-        plt.show()
-
+        clear_output(wait=True)
+        display(Image(filename=save_path))
 
 # generate the gaussian noise for data augmentation
 def add_gaussian_noise(res, mean=0.0, std=0.1):
