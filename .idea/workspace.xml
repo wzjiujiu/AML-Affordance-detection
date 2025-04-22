@@ -93,23 +93,19 @@
       <workItem from="1744281317339" duration="101000" />
       <workItem from="1744281785751" duration="16483000" />
       <workItem from="1744537337613" duration="1571000" />
-      <workItem from="1744645844880" duration="13474000" />
+      <workItem from="1744645844880" duration="15103000" />
+      <workItem from="1744727425024" duration="1761000" />
+      <workItem from="1744807525069" duration="741000" />
+      <workItem from="1744812046872" duration="654000" />
+      <workItem from="1744812816662" duration="6732000" />
+      <workItem from="1744891978705" duration="1425000" />
+      <workItem from="1744972547618" duration="18191000" />
+      <workItem from="1745355281727" duration="1476000" />
     </task>
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
-  </component>
-  <component name="XDebuggerManager">
-    <breakpoint-manager>
-      <breakpoints>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/voxel_mesh.py</url>
-          <line>20</line>
-          <option name="timeStamp" value="25" />
-        </line-breakpoint>
-      </breakpoints>
-    </breakpoint-manager>
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/AML_Affordance_detection$main.coverage" NAME="main Coverage Results" MODIFIED="1744288062666" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />

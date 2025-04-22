@@ -132,8 +132,9 @@ def optimize(args):
     # args.object[0] = ' '.join(args.object[0].split('_'))
     # for i in range(len(args.classes)):
     #     args.classes[i] = ' '.join(args.classes[i].split('_'))
+
     # encode prompt with CLIP
-    # prompt = " "+ .join(args.prompt)
+    #prompt = args.prompt.replace("object", args.object, 1)  # more detailed prompt
     prompt = args.prompt
     with torch.no_grad():
         prompt_token = clip.tokenize([prompt]).to(device)
@@ -184,7 +185,7 @@ def optimize(args):
         # report results
         if i % 100 == 0:
             if args.voxel or args.appro_mesh:
-                print(f"Last 100 CLIP score: {np.mean(losses[-100:])}, Last 100 MIOU score:{np.mean(mious[-100:])}")
+                print(f"Last 100 avg CLIP score: {np.mean(losses[-100:])}, Last 100 avg MIOU score:{np.mean(mious[-100:])}")
             else:
                 print(f"Last 100 CLIP score: {np.mean(losses[-100:])}")
             save_renders(dir, i, rendered_images)
