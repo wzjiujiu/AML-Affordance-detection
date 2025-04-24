@@ -5,7 +5,11 @@ import torch
 import numpy as np
 import kaolin as kal
 import open3d as o3d
-"""affordance_descriptions = {
+
+"""
+# the simple prompt
+affordance_descriptions = {
+            
             "grasp": "a highlighted handle for grasping",
             "contain": "a highlighted space for containing objects",
             "lift": "a highlighted section for lifting",
@@ -26,11 +30,11 @@ import open3d as o3d
             "stab": "a pointed section for stabbing"
 }
 """
-
+# a more detailed prompt
 affordance_descriptions = {
-    "grasp": "a highlighted ergonomic handle with finger grooves for secure grasping",
+    "grasp": "a highlighted handle with finger grooves for secure grasping",
     "contain": "a highlighted hollow compartment with visible capacity to hold objects",
-    "lift": "a highlighted reinforced handle or indentation designed for lifting",
+    "lift": "a highlighted handle or indentation designed for lifting",
     "openable": "a highlighted hinged or sliding mechanism (e.g., lid, door) that can be opened",
     "layable": "a highlighted flat, stable surface suitable for placing objects",
     "sittable": "a highlighted seat-shaped surface with weight-bearing support",
@@ -41,7 +45,7 @@ affordance_descriptions = {
     "display": "a highlighted flat panel or shelf for presenting items",
     "pushable": "a highlighted button, switch, or panel with tactile feedback for pushing",
     "pull": "a highlighted handle or grip designed for pulling motion",
-    "listen": "a highlighted speaker grille or microphone for audio input/output",
+    "listen": "a highlighted speaker grille or microphone for audio input or output",
     "wear": "a highlighted strap, loop, or adjustable section for wearing",
     "press": "a highlighted depressible button with clear activation feedback",
     "cut": "a highlighted sharpened blade or edge for slicing",

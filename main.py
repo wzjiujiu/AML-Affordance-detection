@@ -331,8 +331,8 @@ if __name__ == '__main__':
     parser.add_argument('--n_iter', type=int, default=2500)
 
     # addition parameter
-    parser.add_argument('--voxel', type=str, default=False)  # voxel
-    parser.add_argument('--appro_mesh', type=str, default=False)  # appro_mesh
+    parser.add_argument('--voxel', type=str, default=False)  # when True using voxel mesh
+    parser.add_argument('--appro_mesh', type=str, default=False)  # when True using approximate mesh
     parser.add_argument('--gt_mask', type=float)
 
     args = parser.parse_args()
@@ -344,7 +344,7 @@ if __name__ == '__main__':
             args.classes = key
             args.gt_mask = values.tolist()
             args.prompt = clip_text[i]
-            args.output_dir = f'voxel_results/demo_{args.object}_{key}_{args.n_augs}_{args.learning_rate}_{args.depth}_{args.n_views}'
+            args.output_dir = f'voxel_results/demo_{args.object}_{key}_seed={args.seed}_augs={args.n_augs}_lr={args.learning_rate}_depth={args.depth}_views={args.n_views}'
             print(args.prompt)
             optimize(args)
 
@@ -355,7 +355,7 @@ if __name__ == '__main__':
             args.classes = key
             args.gt_mask = values.tolist()
             args.prompt = clip_text[i]
-            args.output_dir = f'appro_results/demo_{args.object}_{key}_{args.n_augs}_{args.learning_rate}_{args.depth}_{args.n_views}'
+            args.output_dir = f'appro_results/demo_{args.object}_{key}_seed={args.seed}_augs={args.n_augs}_lr={args.learning_rate}_depth={args.depth}_views={args.n_views}'
             print(args.prompt)
             optimize(args)
     else:
