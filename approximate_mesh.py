@@ -21,9 +21,10 @@ def create_appro_mesh(args):
     save_path = (os.path.join(data_dir, 'data_from_appro'))
     Path(save_path).mkdir(parents=True, exist_ok=True)
 
-    random.seed(args.seed)
-    rand_index = random.randint(0, len(data) - 1)
-    single_object = data[rand_index]
+    #random.seed(args.seed)
+    #rand_index = random.randint(0, len(data) - 1)
+    num_index = args.num_object % len(data)
+    single_object = data[num_index]
 
     if 'semantic_class' not in single_object or 'labels' not in single_object or 'coordinates' not in single_object:
         raise KeyError("Missing required keys in data entry.")

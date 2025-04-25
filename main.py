@@ -333,7 +333,8 @@ if __name__ == '__main__':
     # addition parameter
     parser.add_argument('--voxel', type=str, default=False)  # when True using voxel mesh
     parser.add_argument('--appro_mesh', type=str, default=False)  # when True using approximate mesh
-    parser.add_argument('--gt_mask', type=float)
+    parser.add_argument('--gt_mask', type=float, default=0.0)
+    parser.add_argument('--num_object', type=int, default=0)
 
     args = parser.parse_args()
 

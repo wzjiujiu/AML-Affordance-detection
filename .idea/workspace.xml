@@ -6,10 +6,9 @@
   <component name="ChangeListManager">
     <list default="true" id="817db963-91a8-463f-b70b-318ac78b8c6b" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/README_EXTENSION.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/converter.py" beforeDir="false" afterPath="$PROJECT_DIR$/converter.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/approximate_mesh.py" beforeDir="false" afterPath="$PROJECT_DIR$/approximate_mesh.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/voxel_mesh.py" beforeDir="false" afterPath="$PROJECT_DIR$/voxel_mesh.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -105,7 +104,9 @@
       <workItem from="1745355281727" duration="1531000" />
       <workItem from="1745357559189" duration="1293000" />
       <workItem from="1745448493546" duration="714000" />
-      <workItem from="1745474246489" duration="1910000" />
+      <workItem from="1745474246489" duration="2878000" />
+      <workItem from="1745493196447" duration="907000" />
+      <workItem from="1745529066782" duration="4213000" />
     </task>
     <servers />
   </component>
