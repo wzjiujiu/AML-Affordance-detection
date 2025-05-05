@@ -336,6 +336,12 @@ if __name__ == '__main__':
     parser.add_argument('--gt_mask', type=float, default=0.0)
     parser.add_argument('--num_object', type=int, default=0)
 
+    # LR Finder Arguments
+    parser.add_argument('--find_lr', action='store_true', help='Run Learning Rate Range Test instead of full training')
+    parser.add_argument('--lr_find_min_lr', type=float, default=1e-7, help='Minimum LR for range test')
+    parser.add_argument('--lr_find_max_lr', type=float, default=1.0, help='Maximum LR for range test')
+    parser.add_argument('--lr_find_steps', type=int, default=100, help='Number of steps for LR range test')
+
     args = parser.parse_args()
 
     if args.voxel:
@@ -359,6 +365,10 @@ if __name__ == '__main__':
             args.output_dir = f'appro_results/demo_{args.object}_{key}_seed={args.seed}_augs={args.n_augs}_lr={args.learning_rate}_depth={args.depth}_views={args.n_views}'
             print(args.prompt)
             optimize(args)
+    elif args.find_lr:
+        # Run the LR finder and exit (does not proceed to optimize/voxel/appro_mesh)
+        print("*** Running LR Finder Mode ***")
+        run_lr_finder(args)
     else:
         optimize(args)
 
