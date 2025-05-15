@@ -31,7 +31,7 @@ Note: The installation will fail if run on something other than a CUDA GPU machi
 
 #### System Requirements
 - Python 3.9
-- CUDA 11
+- CUDA 12
 - 16 GB GPU
 
 #### Installtion (using conda)
@@ -58,6 +58,7 @@ The entry point of the pipeline. This script handles configuration parsing, data
 - Initializes the model and optimizer.
 - Calls the `render` function to generate images from 3D views.
 - Performs training using CLIP-based loss and logs the results.
+- Run learning rate range test
 
 ### `render.py`
 Implements differentiable multi-view rendering logic using neural or geometric techniques. It is used to generate training supervision signals (rendered images) from 3D inputs.
