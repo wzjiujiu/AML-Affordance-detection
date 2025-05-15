@@ -74,11 +74,6 @@ Handles the conversion between point clouds and voxel grids. It includes resolut
 ### `neural_highligter.py`
 The core learning module. Implements the CLIP-guided neural affordance highlighter, integrating rendering, prompt encoding, loss computation, and gradient-based optimization.
 
-### `o3dmesh.py`
-Contains utilities for working with Open3D mesh structures, such as mesh cleaning, visual inspection, normal estimation, and geometry export.
-
-### `Point_cloud_render.py`
-Implements point cloud rendering using projection and camera simulation. It converts 3D point clouds into 2D RGB images for CLIP-based supervision.
 
 ### `voxel_mesh.py`
 Encapsulates the voxel-based affordance prediction workflow. Handles voxelization, mesh extraction, training, evaluation, and result visualization using voxel grids.
